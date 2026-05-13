@@ -42,6 +42,17 @@ test('replaceActionVar', () => {
   expect(app.replaceActionVar('test {foo|processAncestors} here', 'foo', ['asdf1','asdf2','asdf3'], true)).toBe('test asdf1%22%20OR%20process.entity_id%3A%22asdf2%22%20OR%20process.entity_id%3A%22asdf3 here');
   expect(app.replaceActionVar('test {foo} here', 'foo', null, true)).toBe('test {foo} here');
   expect(app.replaceActionVar('test {foo} here', 'foo', undefined, true)).toBe('test {foo} here');
+  expect(app.replaceActionVar('test {:log.id.uids|any} here', ':log.id.uids', ['val1', 'val2'], true)).toBe('test (%22val1%22%20OR%20%22val2%22) here');
+  expect(app.replaceActionVar('test {:log.id.uids|any} here', ':log.id.uids', ['val1'], true)).toBe('test %22val1%22 here');
+  expect(app.replaceActionVar('test {:foo|any} here', ':foo', 'barval', true)).toBe('test barval here');
+  expect(app.replaceActionVar('test {:foo|any} here', ':foo', ['back\\slash', 'double"quote'], true)).toBe('test (%22back%5C%5Cslash%22%20OR%20%22double%5C%22quote%22) here');
+  expect(app.replaceActionVar('test {:foo} here', ':foo', ['val1', 'val2'], true)).toBe('test val1%2Cval2 here');
+  expect(app.replaceActionVar('test {:log.id.uids|all} here', ':log.id.uids', ['val1', 'val2'], true)).toBe('test (%22val1%22%20AND%20%22val2%22) here');
+  expect(app.replaceActionVar('test {:log.id.uids|all} here', ':log.id.uids', ['val1'], true)).toBe('test %22val1%22 here');
+  expect(app.replaceActionVar('test {:foo|all} here', ':foo', 'barval', true)).toBe('test barval here');
+  expect(app.replaceActionVar('test {:foo|escape} here', ':foo', ['val1', 'val2'], true)).toBe('test val1%2Cval2 here');
+  expect(app.replaceActionVar('test {foo|any} here', 'foo', null, true)).toBe('test {foo|any} here');
+  expect(app.replaceActionVar('test {foo|all} here', 'foo', undefined, true)).toBe('test {foo|all} here');
 });
 
 test('formatMarkdown', () => {
@@ -1081,6 +1092,54 @@ describe('formatActionContent', () => {
     const content = 'Grid: {gridId}';
     const expected = 'Grid: customGrid123';
     expect(app.formatActionContent(content, mockEvent, 'field', 'value')).toBe(expected);
+  });
+
+  test('{:log.id.uids|any} placeholder is substituted end-to-end (implicitly validates field name extraction)', () => {
+    const event = { 'log.id.uids': ['Cabc', 'Cdef'] };
+    const content = 'https://example.com/?uids={:log.id.uids|any}';
+    const expected = 'https://example.com/?uids=(%22Cabc%22%20OR%20%22Cdef%22)';
+    expect(app.formatActionContent(content, event, 'someField', 'someValue')).toBe(expected);
+  });
+
+  test('{:log.id.uids|all} placeholder is substituted end-to-end (implicitly validates field name extraction)', () => {
+    const event = { 'log.id.uids': ['Cabc', 'Cdef'] };
+    const content = 'https://example.com/?uids={:log.id.uids|all}';
+    const expected = 'https://example.com/?uids=(%22Cabc%22%20AND%20%22Cdef%22)';
+    expect(app.formatActionContent(content, event, 'someField', 'someValue')).toBe(expected);
+  });
+
+  test('{:log.id.uid} placeholder remains unreplaced when event only has log.id.uids (no fallback)', () => {
+    const event = { 'log.id.uids': ['Cabc', 'Cdef'] };
+    const content = 'https://example.com?uid={:log.id.uid}';
+    const expected = 'https://example.com?uid={:log.id.uid}';
+    expect(app.formatActionContent(content, event, 'someField', 'someValue')).toBe(expected);
+  });
+
+  test('{:log.id.uids|any} substitutes OR expression when event has log.id.uids array', () => {
+    const event = { 'log.id.uids': ['Cabc', 'Cdef'] };
+    const content = 'https://example.com?uids={:log.id.uids|any}';
+    const expected = 'https://example.com?uids=(%22Cabc%22%20OR%20%22Cdef%22)';
+    expect(app.formatActionContent(content, event, 'someField', 'someValue')).toBe(expected);
+  });
+
+  test('{:log.id.uids|any} placeholder remains unreplaced when event has no log.id.uids', () => {
+    const content = 'https://example.com?uids={:log.id.uids|any}';
+    const expected = 'https://example.com?uids={:log.id.uids|any}';
+    expect(app.formatActionContent(content, {}, 'someField', 'someValue')).toBe(expected);
+  });
+
+  test('{:log.id.uid} substitutes uid when event has log.id.uid (uid takes priority)', () => {
+    const event = { 'log.id.uid': 'Cabc', 'log.id.uids': ['Cabc', 'Cdef'] };
+    const content = 'https://example.com?uid={:log.id.uid}';
+    const expected = 'https://example.com?uid=Cabc';
+    expect(app.formatActionContent(content, event, 'someField', 'someValue')).toBe(expected);
+  });
+
+  test('{:log.id.uids|any} substitutes OR expression when uid is missing but uids array is present', () => {
+    const event = { 'log.id.uids': ['Cabc', 'Cdef'] };
+    const content = 'https://example.com?uids={:log.id.uids|any}';
+    const expected = 'https://example.com?uids=(%22Cabc%22%20OR%20%22Cdef%22)';
+    expect(app.formatActionContent(content, event, 'someField', 'someValue')).toBe(expected);
   });
 });
 

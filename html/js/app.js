@@ -442,6 +442,27 @@ $(document).ready(function () {
             return input;
           };
 
+          if (Array.isArray(value)) {
+            const fieldName = field.startsWith(':') ? field.slice(1) : field;
+            const escapedFieldName = fieldName.replace(/\./g, '\\.');
+            const anyPattern = new RegExp('\\{:?' + escapedFieldName + '\\|any\\}');
+            const allPattern = new RegExp('\\{:?' + escapedFieldName + '\\|all\\}');
+            const escapeVal = v => String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+            if (anyPattern.test(content)) {
+              if (value.length === 1) {
+                value = '"' + escapeVal(value[0]) + '"';
+              } else {
+                value = '(' + value.map(v => '"' + escapeVal(v) + '"').join(' OR ') + ')';
+              }
+            } else if (allPattern.test(content)) {
+              if (value.length === 1) {
+                value = '"' + escapeVal(value[0]) + '"';
+              } else {
+                value = '(' + value.map(v => '"' + escapeVal(v) + '"').join(' AND ') + ')';
+              }
+            }
+          }
+
           content = content.replaceAll("{" + field + "}", encode(value));
           if (content.indexOf("{" + field + "|base64}") !== -1)
             content = content.replaceAll("{" + field + "|base64}", encode(this.base64encode(value)));
@@ -449,6 +470,8 @@ $(document).ready(function () {
           if (content.indexOf("{" + field + "|escape|base64}") !== -1)
             content = content.replaceAll("{" + field + "|escape|base64}", encode(this.base64encode(this.escape(value))));
           content = content.replaceAll("{" + field + "|processAncestors}", encode(this.processAncestors(value)));
+          content = content.replaceAll("{" + field + "|any}", encode(value));
+          content = content.replaceAll("{" + field + "|all}", encode(value));
           return content;
         },
         copyToClipboard(data, style) {
