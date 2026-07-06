@@ -445,14 +445,14 @@
                   <v-list-item-title v-text="i18n.aiMetrics"></v-list-item-title>
                 </router-link>
               </v-list-item>
-              <v-list-item data-aid="nav_admin_agentstudio" v-if="$root.isUserAdmin()">
+              <v-list-item data-aid="nav_admin_agentstudio" v-if="$root.isUserAdmin() && isLicensed('oai') && $root.parameters.assistant?.agentic">
                 <template #prepend>
                   <router-link to="/agentstudio" class="text-decoration-none" aria-hidden="true" tabindex="-1">
                     <v-icon>fa-robot</v-icon>
                   </router-link>
                 </template>
                 <router-link to="/agentstudio" class="text-decoration-none d-block">
-                  <v-list-item-title v-text="i18n.agentStudio"></v-list-item-title>
+                  <v-list-item-title v-text="i18n.agentstudio"></v-list-item-title>
                 </router-link>
               </v-list-item>
             </v-list-item-group>

@@ -196,12 +196,12 @@ type AssistantParameters struct {
 	AgentMapping           map[string]string   `json:"agentMapping"`
 }
 
-// SkillParameters is the client-facing view of an agent skill: its name, the
-// tools it unlocks, and the prompt guidance appended when an agent is granted it.
+// SkillParameters is the client-facing view of an agent skill: its name and the
+// tools it unlocks. The skill's prompt guidance (AdditionalPrompt) is
+// intentionally not exposed to the browser, matching the agent persona.
 type SkillParameters struct {
-	Name             string   `json:"name"`
-	Tools            []string `json:"tools"`
-	AdditionalPrompt string   `json:"additionalPrompt"`
+	Name  string   `json:"name"`
+	Tools []string `json:"tools"`
 }
 
 type ModelParameters struct {
